@@ -1,6 +1,6 @@
 import UIKit
 
-class GradientView: UIView {
+final class GradientView: UIView {
     
     @IBInspectable private var startColor: UIColor? {
         didSet {
