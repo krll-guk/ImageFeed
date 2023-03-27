@@ -4,39 +4,36 @@ final class OAuth2Service {
     static let shared = OAuth2Service()
     
     private let urlSession = URLSession.shared
+    private var task: URLSessionTask?
+    private var lastCode: String?
     
-    func fetchOAuthToken(
-        _ code: String,
-        completion: @escaping (Result<String, Error>) -> Void
-    ) {
+    func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
+        assert(Thread.isMainThread)
+        if lastCode == code { return }
+        task?.cancel()
+        lastCode = code
+        
         let request = authTokenRequest(code: code)
-        let task = object(for: request) { result in
+        let task = urlSession.objectTask(for: request) {
+            [weak self] (result: Result<OAuthTokenResponseBody, Error>) in
+            guard let self = self else { return }
             switch result {
             case .success(let body):
                 OAuth2TokenStorage.token = body.accessToken
-                completion(.success(OAuth2TokenStorage.token!))
+                guard let token = OAuth2TokenStorage.token else { return }
+                completion(.success(token))
+                self.task = nil
             case .failure(let error):
                 completion(.failure(error))
+                self.lastCode = nil
             }
         }
+        self.task = task
         task.resume()
     }
 }
 
 extension OAuth2Service {
-    private func object(
-        for request: URLRequest,
-        completion: @escaping (Result<OAuthTokenResponseBody, Error>) -> Void
-    ) -> URLSessionTask {
-        let decoder = JSONDecoder()
-        return urlSession.data(for: request) { (result: Result<Data, Error>) in
-            let response = result.flatMap { data -> Result<OAuthTokenResponseBody, Error> in
-                Result { try decoder.decode(OAuthTokenResponseBody.self, from: data) }
-            }
-            completion(response)
-        }
-    }
-    
     private func authTokenRequest(code: String) -> URLRequest {
         URLRequest.makeHTTPRequest(
             path: "/oauth/token"
@@ -50,7 +47,7 @@ extension OAuth2Service {
         )
     }
     
-    private struct OAuthTokenResponseBody: Decodable {
+    private struct OAuthTokenResponseBody: Codable {
         let accessToken: String
         let tokenType: String
         let scope: String
@@ -88,7 +85,7 @@ enum NetworkError: Error {
 }
 
 extension URLSession {
-    func data(
+    private func data(
         for request: URLRequest,
         completion: @escaping (Result<Data, Error>) -> Void
     ) -> URLSessionTask {
@@ -116,5 +113,18 @@ extension URLSession {
         })
         task.resume()
         return task
+    }
+    
+    func objectTask<T: Codable>(
+        for request: URLRequest,
+        completion: @escaping (Result<T, Error>) -> Void
+    ) -> URLSessionTask {
+        let decoder = JSONDecoder()
+        return data(for: request) { (result: Result<Data, Error>) in
+            let response = result.flatMap { data -> Result<T, Error> in
+                Result { try decoder.decode(T.self, from: data) }
+            }
+            completion(response)
+        }
     }
 }
