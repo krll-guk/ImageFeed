@@ -1,11 +1,15 @@
 import UIKit
+import Kingfisher
 
 final class ProfileViewController: UIViewController {
+    private let profileService = ProfileService.shared
+    private var profileImageServiceObserver: NSObjectProtocol?
     
     private lazy var profileImageView: UIImageView = {
         let image = UIImageView()
         image.image = UIImage(named: "Photo")
-        image.frame = CGRect(x: 0, y: 0, width: 70, height: 70)
+        image.layer.cornerRadius = 35
+        image.clipsToBounds = true
         return image
     }()
     
@@ -39,7 +43,6 @@ final class ProfileViewController: UIViewController {
             target: self,
             action: #selector(Self.didTapExitButton)
         )
-        button.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
         button.tintColor = UIColor(named: "YP Red")
         return button
     }()
@@ -47,9 +50,44 @@ final class ProfileViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        
+        if let profile = profileService.profile {
+            updateProfileDetails(profile: profile)
+        }
+        
+        profileImageServiceObserver = NotificationCenter.default.addObserver(
+            forName: ProfileImageService.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            self.updateAvatar()
+        }
+        updateAvatar()
+    }
+    
+    private func updateAvatar() {
+        guard
+            let profileImageURL = ProfileImageService.shared.avatarURL,
+            let url = URL(string: profileImageURL)
+        else { return }
+        
+        let cache = ImageCache.default
+        cache.clearMemoryCache()
+        cache.clearDiskCache()
+        
+        profileImageView.kf.indicatorType = .activity
+        profileImageView.kf.setImage(with: url, placeholder: UIImage(named: "Stub"))
+    }
+    
+    private func updateProfileDetails(profile: Profile) {
+        nameLabel.text = profile.name
+        loginNameLabel.text = profile.loginName
+        descriptionLabel.text = profile.bio
     }
     
     private func setupUI() {
+        view.backgroundColor = UIColor(named: "YP Black")
         setupProfileImageView()
         setupNameLabel()
         setupLoginNameLabel()
@@ -57,13 +95,26 @@ final class ProfileViewController: UIViewController {
         setupExitButton()
     }
     
+    @objc
+    private func didTapExitButton() {
+        nameLabel.isHidden = true
+        loginNameLabel.isHidden = true
+        descriptionLabel.isHidden = true
+        profileImageView.image = UIImage(named: "Stub")
+        OAuth2TokenStorage.token = nil
+    }
+}
+
+extension ProfileViewController {
     private func setupProfileImageView() {
         profileImageView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(profileImageView)
         
         NSLayoutConstraint.activate([
             profileImageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 32),
-            profileImageView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16)
+            profileImageView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            profileImageView.heightAnchor.constraint(equalToConstant: 70),
+            profileImageView.widthAnchor.constraint(equalToConstant: 70)
         ])
     }
     
@@ -80,7 +131,7 @@ final class ProfileViewController: UIViewController {
     private func setupLoginNameLabel() {
         loginNameLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(loginNameLabel)
-
+        
         NSLayoutConstraint.activate([
             loginNameLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
             loginNameLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8)
@@ -90,7 +141,7 @@ final class ProfileViewController: UIViewController {
     private func setupDescriptionLabel() {
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(descriptionLabel)
-
+        
         NSLayoutConstraint.activate([
             descriptionLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
             descriptionLabel.topAnchor.constraint(equalTo: loginNameLabel.bottomAnchor, constant: 8)
@@ -103,15 +154,9 @@ final class ProfileViewController: UIViewController {
         
         NSLayoutConstraint.activate([
             exitButton.centerYAnchor.constraint(equalTo: profileImageView.centerYAnchor),
-            exitButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24)
+            exitButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
+            exitButton.heightAnchor.constraint(equalToConstant: 24),
+            exitButton.widthAnchor.constraint(equalToConstant: 24)
         ])
-    }
-    
-    @objc
-    private func didTapExitButton() {
-        nameLabel.isHidden = true
-        loginNameLabel.isHidden = true
-        descriptionLabel.isHidden = true
-        profileImageView.image = UIImage(named: "Stub")
     }
 }
