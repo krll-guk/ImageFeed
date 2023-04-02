@@ -7,6 +7,20 @@ struct Profile {
     let bio: String
 }
 
+fileprivate struct ProfileResult: Codable {
+    let username: String?
+    let firstName: String?
+    let lastName: String?
+    let bio: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case username = "username"
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case bio = "bio"
+    }
+}
+
 final class ProfileService {
     static let shared = ProfileService()
     
@@ -14,17 +28,12 @@ final class ProfileService {
     
     private let urlSession = URLSession.shared
     private var task: URLSessionTask?
-    private var lastToken: String?
     
-    func fetchProfile(_ token: String, completion: @escaping (Result<Profile, Error>) -> Void) {
+    func fetchProfile(completion: @escaping (Result<Profile, Error>) -> Void) {
         assert(Thread.isMainThread)
-        if lastToken == token { return }
         task?.cancel()
-        lastToken = token
         
-        var request = URLRequest.makeHTTPRequest(path: "/me", httpMethod: "GET")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
+        let request = URLRequest.makeRequest(.profile)
         let task = urlSession.objectTask(for: request) {
             [weak self] (result: Result<ProfileResult, Error>) in
             guard let self = self else { return }
@@ -38,27 +47,12 @@ final class ProfileService {
                 )
                 self.profile = profile
                 completion(.success(profile))
-                self.task = nil
             case .failure(let error):
                 completion(.failure(error))
-                self.lastToken = nil
             }
+            self.task = nil
         }
         self.task = task
         task.resume()
-    }
-    
-    private struct ProfileResult: Codable {
-        let username: String?
-        let firstName: String?
-        let lastName: String?
-        let bio: String?
-        
-        enum CodingKeys: String, CodingKey {
-            case username = "username"
-            case firstName = "first_name"
-            case lastName = "last_name"
-            case bio = "bio"
-        }
     }
 }

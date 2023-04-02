@@ -1,5 +1,21 @@
 import Foundation
 
+fileprivate struct UserResult: Codable {
+    let profileImage: ProfileImageURL
+    
+    enum CodingKeys: String, CodingKey {
+        case profileImage = "profile_image"
+    }
+}
+
+fileprivate struct ProfileImageURL: Codable {
+    let small: String
+    
+    enum CodingKeys: String, CodingKey {
+        case small = "small"
+    }
+}
+
 final class ProfileImageService {
     static let didChangeNotification = Notification.Name(rawValue: "ProfileImageProviderDidChange")
     static let shared = ProfileImageService()
@@ -8,21 +24,12 @@ final class ProfileImageService {
     
     private let urlSession = URLSession.shared
     private var task: URLSessionTask?
-    private var lastToken: String?
     
-    func fetchProfileImageURL(
-        _ token: String,
-        username: String,
-        _ completion: @escaping (Result<String, Error>) -> Void
-    ) {
+    func fetchProfileImageURL(username: String, _ completion: @escaping (Result<String, Error>) -> Void) {
         assert(Thread.isMainThread)
-        if lastToken == token { return }
         task?.cancel()
-        lastToken = token
         
-        var request = URLRequest.makeHTTPRequest(path: "/users/\(username)", httpMethod: "GET")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
+        let request = URLRequest.makeRequest(.profileImage(username: username))
         let task = urlSession.objectTask(for: request) {
             [weak self] (result: Result<UserResult, Error>) in
             guard let self = self else { return }
@@ -36,29 +43,12 @@ final class ProfileImageService {
                     object: self,
                     userInfo: ["URL" : avatarURL]
                 )
-                self.task = nil
             case .failure(let error):
                 completion(.failure(error))
-                self.lastToken = nil
             }
+            self.task = nil
         }
         self.task = task
         task.resume()
-    }
-    
-    private struct UserResult: Codable {
-        let profileImage: ProfileImageURL
-        
-        enum CodingKeys: String, CodingKey {
-            case profileImage = "profile_image"
-        }
-    }
-    
-    private struct ProfileImageURL: Codable {
-        let small: String
-        
-        enum CodingKeys: String, CodingKey {
-            case small = "small"
-        }
     }
 }

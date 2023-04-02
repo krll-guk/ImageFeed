@@ -101,6 +101,7 @@ final class ProfileViewController: UIViewController {
         loginNameLabel.isHidden = true
         descriptionLabel.isHidden = true
         profileImageView.image = UIImage(named: "Stub")
+        OAuth2TokenStorage.token = nil
     }
 }
 
