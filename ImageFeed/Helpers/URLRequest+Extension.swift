@@ -4,6 +4,7 @@ enum requestType {
     case authToken(code: String)
     case profile
     case profileImage(username: String)
+    case photos(nextPage: Int)
 }
 
 enum HTTPMethod: String {
@@ -47,6 +48,11 @@ extension URLRequest {
             request = URLRequest.setupHTTPRequest(path: "/me")
         case .profileImage(let username):
             request = URLRequest.setupHTTPRequest(path: "/users/\(username)")
+        case .photos(let nextPage):
+            request = URLRequest.setupHTTPRequest(
+                path: "/photos",
+                queryItems: [.init(name: "page", value: "\(nextPage)")]
+            )
         }
         
         if let token = OAuth2TokenStorage.token {
