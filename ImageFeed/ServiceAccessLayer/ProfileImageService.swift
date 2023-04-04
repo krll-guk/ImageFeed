@@ -29,7 +29,7 @@ final class ProfileImageService {
         assert(Thread.isMainThread)
         task?.cancel()
         
-        let request = URLRequest.makeRequest(.profileImage(username: username))
+        let request = URLRequest.makeRequest(.profileImage(username))
         let task = urlSession.objectTask(for: request) {
             [weak self] (result: Result<UserResult, Error>) in
             guard let self = self else { return }

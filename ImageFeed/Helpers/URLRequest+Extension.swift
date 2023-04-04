@@ -1,10 +1,10 @@
 import Foundation
 
 enum requestType {
-    case authToken(code: String)
+    case authToken(_ code: String)
     case profile
-    case profileImage(username: String)
-    case photos(nextPage: Int)
+    case profileImage(_ username: String)
+    case photos(_ nextPage: Int)
 }
 
 enum HTTPMethod: String {
@@ -14,11 +14,13 @@ enum HTTPMethod: String {
 extension URLRequest {
     static func setupHTTPRequest(
         httpMethod: String = HTTPMethod.GET.rawValue,
-        baseURL: String = Constants.apiURL,
+        host: String = "api.unsplash.com",
         path: String,
         queryItems: [URLQueryItem] = []
     ) -> URLRequest {
-        var urlComponents = URLComponents(string: baseURL)!
+        var urlComponents = URLComponents()
+        urlComponents.scheme = "https"
+        urlComponents.host = host
         urlComponents.path = path
         urlComponents.queryItems = queryItems
         let url = urlComponents.url!
@@ -34,8 +36,8 @@ extension URLRequest {
         case .authToken(let code):
             request = URLRequest.setupHTTPRequest(
                 httpMethod: HTTPMethod.POST.rawValue,
-                baseURL: Constants.oauthURL,
-                path: "/token",
+                host: "unsplash.com",
+                path: "/oauth/token",
                 queryItems: [
                     .init(name: "client_id", value: Constants.accessKey),
                     .init(name: "client_secret", value: Constants.secretKey),

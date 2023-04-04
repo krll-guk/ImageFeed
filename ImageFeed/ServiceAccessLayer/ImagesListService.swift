@@ -20,9 +20,13 @@ fileprivate struct PhotoResult: Codable {
     let urls: UrlsResult
     
     enum CodingKeys: String, CodingKey {
-        case id, width, height, description, urls
+        case id
         case createdAt = "created_at"
+        case width
+        case height
         case likedByUser = "liked_by_user"
+        case description
+        case urls
     }
 }
 
@@ -48,36 +52,37 @@ final class ImagesListService {
     private var task: URLSessionTask?
     private let dateFormatter = ISO8601DateFormatter()
     
-    func fetchPhotosNextPage(completion: @escaping (Result<Photo, Error>) -> Void) {
+    func fetchPhotosNextPage() {
         assert(Thread.isMainThread)
         task?.cancel()
         
         let nextPage = lastLoadedPage == nil ? 1 : lastLoadedPage! + 1
         
-        let request = URLRequest.makeRequest(.photos(nextPage: nextPage))
+        let request = URLRequest.makeRequest(.photos(nextPage))
         let task = urlSession.objectTask(for: request) {
-            [weak self] (result: Result<PhotoResult, Error>) in
+            [weak self] (result: Result<[PhotoResult], Error>) in
             guard let self = self else { return }
             switch result {
             case .success(let photoResult):
-                let photos = Photo(
-                    id: photoResult.id,
-                    size: .init(width: photoResult.width, height: photoResult.height),
-                    createdAt: self.dateFormatter.date(from: photoResult.createdAt ?? ""),
-                    welcomeDescription: photoResult.description,
-                    thumbImageURL: photoResult.urls.thumb,
-                    largeImageURL: photoResult.urls.full,
-                    isLiked: photoResult.likedByUser
-                )
-                self.photos.append(photos)
-                completion(.success(photos))
+                let photos = photoResult.map {
+                    return Photo(
+                        id: $0.id,
+                        size: .init(width: $0.width, height: $0.height),
+                        createdAt: self.dateFormatter.date(from: $0.createdAt ?? ""),
+                        welcomeDescription: $0.description,
+                        thumbImageURL: $0.urls.thumb,
+                        largeImageURL: $0.urls.full,
+                        isLiked: $0.likedByUser
+                    )
+                }
+                self.photos += photos
                 NotificationCenter.default.post(
                     name: ImagesListService.didChangeNotification,
                     object: self,
                     userInfo: ["photos" : self.photos]
                 )
-            case .failure(let error):
-                completion(.failure(error))
+            case .failure:
+                break
             }
             self.task = nil
         }

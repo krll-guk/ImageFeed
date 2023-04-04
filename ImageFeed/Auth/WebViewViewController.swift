@@ -19,8 +19,10 @@ final class WebViewViewController: UIViewController {
         
         webView.navigationDelegate = self
         
-        var urlComponents = URLComponents(string: Constants.oauthURL)!
-        urlComponents.path = "/authorize"
+        var urlComponents = URLComponents()
+        urlComponents.scheme = "https"
+        urlComponents.host = "unsplash.com"
+        urlComponents.path = "/oauth/authorize"
         urlComponents.queryItems = [
             URLQueryItem(name: "client_id", value: Constants.accessKey),
             URLQueryItem(name: "redirect_uri", value: Constants.redirectURI),
