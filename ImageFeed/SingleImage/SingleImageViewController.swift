@@ -1,11 +1,11 @@
 import UIKit
+import Kingfisher
 
 final class SingleImageViewController: UIViewController {
-    var image: UIImage! {
+    var photoURL: String! {
         didSet {
             guard isViewLoaded else { return }
-            imageView.image = image
-            rescaleAndCenterImageInScrollView(image: image)
+            downloadPhoto()
         }
     }
     
@@ -14,12 +14,11 @@ final class SingleImageViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        imageView.image = image
         
         scrollView.minimumZoomScale = 0.1
         scrollView.maximumZoomScale = 1.25
         
-        rescaleAndCenterImageInScrollView(image: image)
+        downloadPhoto()
     }
     
     @IBAction private func didTapBackButton() {
@@ -28,10 +27,26 @@ final class SingleImageViewController: UIViewController {
     
     @IBAction private func didTapShareButton(_ sender: UIButton) {
         let share = UIActivityViewController(
-            activityItems: [image as Any],
+            activityItems: [imageView.image as Any],
             applicationActivities: nil
         )
         present(share, animated: true, completion: nil)
+    }
+    
+    private func downloadPhoto() {
+        guard let url = URL(string: photoURL) else { return }
+        UIBlockingProgressHUD.show()
+        
+        imageView.kf.setImage(with: url) { [weak self] result in
+            guard let self = self else { return }
+            UIBlockingProgressHUD.dismiss()
+            switch result {
+            case .success(let value):
+                self.rescaleAndCenterImageInScrollView(image: value.image)
+            case .failure(let error):
+                print(error)
+            }
+        }
     }
     
     private func rescaleAndCenterImageInScrollView(image: UIImage) {
@@ -55,5 +70,12 @@ final class SingleImageViewController: UIViewController {
 extension SingleImageViewController: UIScrollViewDelegate {
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         imageView
+    }
+    
+    func scrollViewDidZoom(_ scrollView: UIScrollView) {
+        view.layoutIfNeeded()
+        let offsetX = max((scrollView.bounds.size.width - scrollView.contentSize.width) / 2, 0)
+        let offsetY = max((scrollView.bounds.size.height - scrollView.contentSize.height) / 2, 0)
+        scrollView.contentInset = UIEdgeInsets(top: offsetY, left: offsetX, bottom: 0, right: 0)
     }
 }

@@ -1,10 +1,10 @@
 import Foundation
 
 enum requestType {
-    case authToken(_ code: String)
+    case authToken(code: String)
     case profile
-    case profileImage(_ username: String)
-    case photos(_ nextPage: Int)
+    case profileImage(username: String)
+    case photos(nextPage: Int)
 }
 
 enum HTTPMethod: String {

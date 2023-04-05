@@ -14,10 +14,10 @@ fileprivate struct ProfileResult: Codable {
     let bio: String?
     
     enum CodingKeys: String, CodingKey {
-        case username = "username"
+        case username
         case firstName = "first_name"
         case lastName = "last_name"
-        case bio = "bio"
+        case bio
     }
 }
 
@@ -48,6 +48,7 @@ final class ProfileService {
                 self.profile = profile
                 completion(.success(profile))
             case .failure(let error):
+                print(error)
                 completion(.failure(error))
             }
             self.task = nil

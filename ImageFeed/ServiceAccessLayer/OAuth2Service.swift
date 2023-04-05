@@ -27,7 +27,7 @@ final class OAuth2Service {
         task?.cancel()
         lastCode = code
         
-        let request = URLRequest.makeRequest(.authToken(code))
+        let request = URLRequest.makeRequest(.authToken(code: code))
         let task = urlSession.objectTask(for: request) {
             [weak self] (result: Result<OAuthTokenResponseBody, Error>) in
             guard let self = self else { return }
@@ -36,6 +36,7 @@ final class OAuth2Service {
                 OAuth2TokenStorage.token = body.accessToken
                 completion(.success(body.accessToken))
             case .failure(let error):
+                print(error)
                 completion(.failure(error))
             }
             self.task = nil

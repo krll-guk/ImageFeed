@@ -31,19 +31,18 @@ fileprivate struct PhotoResult: Codable {
 }
 
 fileprivate struct UrlsResult: Codable {
-    let raw: String
     let full: String
-    let regular: String
-    let small: String
     let thumb: String
     
     enum CodingKeys: String, CodingKey {
-        case raw, full, regular, small, thumb
+        case full, thumb
     }
 }
 
 final class ImagesListService {
+    static let shared = ImagesListService()
     static let didChangeNotification = Notification.Name(rawValue: "ImagesListServiceDidChange")
+    
     private(set) var photos: [Photo] = []
     
     private var lastLoadedPage: Int?
@@ -58,7 +57,7 @@ final class ImagesListService {
         
         let nextPage = lastLoadedPage == nil ? 1 : lastLoadedPage! + 1
         
-        let request = URLRequest.makeRequest(.photos(nextPage))
+        let request = URLRequest.makeRequest(.photos(nextPage: nextPage))
         let task = urlSession.objectTask(for: request) {
             [weak self] (result: Result<[PhotoResult], Error>) in
             guard let self = self else { return }
@@ -76,13 +75,14 @@ final class ImagesListService {
                     )
                 }
                 self.photos += photos
+                self.lastLoadedPage = nextPage
                 NotificationCenter.default.post(
                     name: ImagesListService.didChangeNotification,
                     object: self,
                     userInfo: ["photos" : self.photos]
                 )
-            case .failure:
-                break
+            case .failure(let error):
+                print(error)
             }
             self.task = nil
         }

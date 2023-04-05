@@ -12,7 +12,7 @@ fileprivate struct ProfileImageURL: Codable {
     let small: String
     
     enum CodingKeys: String, CodingKey {
-        case small = "small"
+        case small
     }
 }
 
@@ -29,7 +29,7 @@ final class ProfileImageService {
         assert(Thread.isMainThread)
         task?.cancel()
         
-        let request = URLRequest.makeRequest(.profileImage(username))
+        let request = URLRequest.makeRequest(.profileImage(username: username))
         let task = urlSession.objectTask(for: request) {
             [weak self] (result: Result<UserResult, Error>) in
             guard let self = self else { return }
@@ -44,6 +44,7 @@ final class ProfileImageService {
                     userInfo: ["URL" : avatarURL]
                 )
             case .failure(let error):
+                print(error)
                 completion(.failure(error))
             }
             self.task = nil
