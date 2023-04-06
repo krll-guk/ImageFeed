@@ -5,6 +5,7 @@ enum requestType {
     case profile
     case profileImage(username: String)
     case photos(nextPage: Int)
+    case like(id: String, isLiked: Bool)
 }
 
 enum HTTPMethod: String {
@@ -54,6 +55,11 @@ extension URLRequest {
             request = URLRequest.setupHTTPRequest(
                 path: "/photos",
                 queryItems: [.init(name: "page", value: "\(nextPage)")]
+            )
+        case .like(let id, let isLiked):
+            request = URLRequest.setupHTTPRequest(
+                httpMethod: isLiked ? HTTPMethod.DELETE.rawValue : HTTPMethod.POST.rawValue,
+                path: "/photos/\(id)/like"
             )
         }
         

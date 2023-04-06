@@ -7,10 +7,20 @@ struct Photo {
     let welcomeDescription: String?
     let thumbImageURL: String
     let largeImageURL: String
-    let isLiked: Bool
+    var isLiked: Bool
+    
+    init(fromResult: PhotoResult) {
+        self.id = fromResult.id
+        self.size = .init(width: fromResult.width, height: fromResult.height)
+        self.createdAt = ISO8601DateFormatter().date(from: fromResult.createdAt ?? "")
+        self.welcomeDescription = fromResult.description
+        self.thumbImageURL = fromResult.urls.thumb
+        self.largeImageURL = fromResult.urls.full
+        self.isLiked = fromResult.likedByUser
+    }
 }
 
-fileprivate struct PhotoResult: Codable {
+struct PhotoResult: Codable {
     let id: String
     let createdAt: String?
     let width: Int
@@ -30,13 +40,17 @@ fileprivate struct PhotoResult: Codable {
     }
 }
 
-fileprivate struct UrlsResult: Codable {
+struct UrlsResult: Codable {
     let full: String
     let thumb: String
     
     enum CodingKeys: String, CodingKey {
         case full, thumb
     }
+}
+
+struct LikeResult: Codable {
+    let photo: PhotoResult
 }
 
 final class ImagesListService {
@@ -49,7 +63,6 @@ final class ImagesListService {
     
     private let urlSession = URLSession.shared
     private var task: URLSessionTask?
-    private let dateFormatter = ISO8601DateFormatter()
     
     func fetchPhotosNextPage() {
         assert(Thread.isMainThread)
@@ -64,15 +77,7 @@ final class ImagesListService {
             switch result {
             case .success(let photoResult):
                 let photos = photoResult.map {
-                    return Photo(
-                        id: $0.id,
-                        size: .init(width: $0.width, height: $0.height),
-                        createdAt: self.dateFormatter.date(from: $0.createdAt ?? ""),
-                        welcomeDescription: $0.description,
-                        thumbImageURL: $0.urls.thumb,
-                        largeImageURL: $0.urls.full,
-                        isLiked: $0.likedByUser
-                    )
+                    return Photo(fromResult: $0)
                 }
                 self.photos += photos
                 self.lastLoadedPage = nextPage
@@ -83,6 +88,32 @@ final class ImagesListService {
                 )
             case .failure(let error):
                 print(error)
+            }
+            self.task = nil
+        }
+        self.task = task
+        task.resume()
+    }
+}
+
+extension ImagesListService {
+    func changeLike(photoId: String, isLiked: Bool, _ completion: @escaping (Result<Bool, Error>) -> Void) {
+        assert(Thread.isMainThread)
+        task?.cancel()
+        
+        let request = URLRequest.makeRequest(.like(id: photoId, isLiked: isLiked))
+        let task = urlSession.objectTask(for: request) {
+            [weak self] (result: Result<LikeResult, Error>) in
+            guard let self = self else { return }
+            switch result {
+            case .success(let likeResponse):
+                if let index = self.photos.firstIndex(where: { $0.id == likeResponse.photo.id }) {
+                    self.photos[index].isLiked = likeResponse.photo.likedByUser
+                }
+                completion(.success(likeResponse.photo.likedByUser))
+            case .failure(let error):
+                print(error)
+                completion(.failure(error))
             }
             self.task = nil
         }

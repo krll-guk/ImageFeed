@@ -5,9 +5,16 @@ struct Profile {
     let name: String
     let loginName: String
     let bio: String
+    
+    init(fromResult: ProfileResult) {
+        self.username = fromResult.username ?? "username"
+        self.name = "\(fromResult.firstName ?? "Ivan") \(fromResult.lastName ?? "Ivanov")"
+        self.loginName = "@\(fromResult.username ?? "username")"
+        self.bio = fromResult.bio ?? ""
+    }
 }
 
-fileprivate struct ProfileResult: Codable {
+struct ProfileResult: Codable {
     let username: String?
     let firstName: String?
     let lastName: String?
@@ -39,12 +46,7 @@ final class ProfileService {
             guard let self = self else { return }
             switch result {
             case .success(let profileResult):
-                let profile = Profile(
-                    username: profileResult.username ?? "username",
-                    name: "\(profileResult.firstName ?? "Ivan") \(profileResult.lastName ?? "Ivanov")",
-                    loginName: "@\(profileResult.username ?? "username")",
-                    bio: profileResult.bio ?? ""
-                )
+                let profile = Profile(fromResult: profileResult)
                 self.profile = profile
                 completion(.success(profile))
             case .failure(let error):

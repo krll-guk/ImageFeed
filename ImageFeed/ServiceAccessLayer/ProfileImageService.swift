@@ -9,11 +9,7 @@ fileprivate struct UserResult: Codable {
 }
 
 fileprivate struct ProfileImageURL: Codable {
-    let small: String
-    
-    enum CodingKeys: String, CodingKey {
-        case small
-    }
+    let medium: String
 }
 
 final class ProfileImageService {
@@ -35,7 +31,7 @@ final class ProfileImageService {
             guard let self = self else { return }
             switch result {
             case .success(let userResult):
-                let avatarURL = userResult.profileImage.small
+                let avatarURL = userResult.profileImage.medium
                 self.avatarURL = avatarURL
                 completion(.success(avatarURL))
                 NotificationCenter.default.post(
