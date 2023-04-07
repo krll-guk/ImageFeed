@@ -97,11 +97,37 @@ final class ProfileViewController: UIViewController {
     
     @objc
     private func didTapExitButton() {
-        nameLabel.isHidden = true
-        loginNameLabel.isHidden = true
-        descriptionLabel.isHidden = true
-        profileImageView.image = UIImage(named: "Stub")
+        showAlertViewController()
+    }
+}
+
+extension ProfileViewController: AlertViewControllerDelegate {
+    func didTapFirstButton() {
+        profileLogout()
+    }
+    
+    private func showAlertViewController() {
+        let alertViewController = AlertViewController()
+        alertViewController.delegate = self
+        alertViewController.modalPresentationStyle = .overFullScreen
+        present(alertViewController, animated: false) {
+            alertViewController.showError(
+                title: "Пока, пока!",
+                message: "Уверены что хотите выйти?",
+                firstButtonText: "Да",
+                secondButtonText: "Нет"
+            )
+        }
+    }
+    
+    private func profileLogout() {
         OAuth2TokenStorage.token = nil
+        WebViewViewController.clean()
+        
+        guard let window = UIApplication.shared.windows.first else {
+            return assertionFailure("Invalid Configuration")
+        }
+        window.rootViewController = SplashViewController()
     }
 }
 
