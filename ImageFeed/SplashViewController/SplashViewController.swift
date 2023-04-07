@@ -14,6 +14,7 @@ final class SplashViewController: UIViewController {
         super.viewDidAppear(animated)
         
         if OAuth2TokenStorage.token != nil {
+            UIBlockingProgressHUD.show()
             fetchProfile()
         } else {
             showAuthViewController()
@@ -68,7 +69,7 @@ extension SplashViewController: AuthViewControllerDelegate {
                 self.fetchProfile()
             case .failure:
                 UIBlockingProgressHUD.dismiss()
-                self.showError()
+                self.showAlertViewController()
             }
         }
     }
@@ -82,24 +83,30 @@ extension SplashViewController: AuthViewControllerDelegate {
                 self.profileImageService.fetchProfileImageURL(username: profile.username) { _ in }
                 self.switchToTabBarController()
             case .failure:
-                self.showError()
+                self.showAlertViewController()
             }
         }
     }
+}
+
+extension SplashViewController: AlertViewControllerDelegate {
+    func didTapFirstButton() {
+        if OAuth2TokenStorage.token != nil {
+            UIBlockingProgressHUD.show()
+            fetchProfile()
+        }
+    }
     
-    private func showError() {
-        let alert = UIAlertController(
-            title: "Что-то пошло не так(",
-            message: "Не удалось войти в систему",
-            preferredStyle: .alert
-        )
-        
-        let action = UIAlertAction(
-            title: "Ок",
-            style: .default
-        )
-        
-        alert.addAction(action)
-        presentedViewController?.present(alert, animated: true)
+    private func showAlertViewController() {
+        let alertViewController = AlertViewController()
+        alertViewController.delegate = self
+        alertViewController.modalPresentationStyle = .overFullScreen
+        present(alertViewController, animated: false) {
+            alertViewController.showError(
+                title: "Что-то пошло не так(",
+                message: "Не удалось войти в систему",
+                firstButtonText: "Ок"
+            )
+        }
     }
 }

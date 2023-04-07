@@ -7,6 +7,8 @@ final class ImagesListViewController: UIViewController {
     
     private var photos: [Photo] = []
     
+    private var error: KingfisherError?
+    
     private let ShowSingleImageSegueIdentifier = "ShowSingleImage"
     
     private let imagesListService = ImagesListService.shared
@@ -56,9 +58,16 @@ extension ImagesListViewController {
         cell.cellImage.kf.setImage(
             with: url,
             placeholder: UIImage(named: "photo_placeholder")
-        ) { [weak self] _ in
+        ) { [weak self] result in
             guard let self = self else { return }
-            self.tableView.reloadRows(at: [indexPath], with: .automatic)
+            switch result {
+            case .success:
+                self.tableView.reloadRows(at: [indexPath], with: .automatic)
+            case .failure(let error):
+                self.error = error
+                self.showAlertViewController()
+                print(error)
+            }
         }
         
         cell.dateLabel.text = dateFormatter.string(from: photo.createdAt ?? Date())
@@ -136,9 +145,31 @@ extension ImagesListViewController: ImagesListCellDelegate {
                 self.photos = self.imagesListService.photos
                 cell.setIsLiked(isLiked)
             case .failure:
-                break
-                // TODO: Показать ошибку с использованием UIAlertController
+                self.showAlertViewController()
             }
+        }
+    }
+}
+
+extension ImagesListViewController: AlertViewControllerDelegate {
+    func didTapFirstButton() {
+        if error != nil{
+            tableView.reloadData()
+        }
+        error = nil
+    }
+    
+    private func showAlertViewController() {
+        let alertViewController = AlertViewController()
+        alertViewController.delegate = self
+        alertViewController.modalPresentationStyle = .overFullScreen
+        present(alertViewController, animated: false) { [weak self] in
+            guard let self = self else { return }
+            alertViewController.showError(
+                title: "Что-то пошло не так(",
+                message: self.error != nil ? "Не удалось загрузить фото" : "Не удалось поставить лайк",
+                firstButtonText: "Ок"
+            )
         }
     }
 }

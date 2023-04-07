@@ -1,5 +1,6 @@
 import UIKit
 import Kingfisher
+import ProgressHUD
 
 final class SingleImageViewController: UIViewController {
     var photoURL: String! {
@@ -23,6 +24,8 @@ final class SingleImageViewController: UIViewController {
     
     @IBAction private func didTapBackButton() {
         dismiss(animated: true, completion: nil)
+        ProgressHUD.dismiss()
+        imageView.kf.cancelDownloadTask()
     }
     
     @IBAction private func didTapShareButton(_ sender: UIButton) {
@@ -35,15 +38,16 @@ final class SingleImageViewController: UIViewController {
     
     private func downloadPhoto() {
         guard let url = URL(string: photoURL) else { return }
-        UIBlockingProgressHUD.show()
+        ProgressHUD.show()
         
         imageView.kf.setImage(with: url) { [weak self] result in
             guard let self = self else { return }
-            UIBlockingProgressHUD.dismiss()
+            ProgressHUD.dismiss()
             switch result {
             case .success(let value):
                 self.rescaleAndCenterImageInScrollView(image: value.image)
             case .failure(let error):
+                self.showAlertViewController()
                 print(error)
             }
         }
@@ -77,5 +81,29 @@ extension SingleImageViewController: UIScrollViewDelegate {
         let offsetX = max((scrollView.bounds.size.width - scrollView.contentSize.width) / 2, 0)
         let offsetY = max((scrollView.bounds.size.height - scrollView.contentSize.height) / 2, 0)
         scrollView.contentInset = UIEdgeInsets(top: offsetY, left: offsetX, bottom: 0, right: 0)
+    }
+}
+
+extension SingleImageViewController: AlertViewControllerDelegate {
+    func didTapFirstButton() {
+        didTapBackButton()
+    }
+    
+    func didTapSecondButton() {
+        downloadPhoto()
+    }
+    
+    private func showAlertViewController() {
+        let alertViewController = AlertViewController()
+        alertViewController.delegate = self
+        alertViewController.modalPresentationStyle = .overFullScreen
+        present(alertViewController, animated: false) {
+            alertViewController.showError(
+                title: "Что-то пошло не так(",
+                message: "Попробовать ещё раз?",
+                firstButtonText: "Не надо",
+                secondButtonText: "Повторить"
+            )
+        }
     }
 }

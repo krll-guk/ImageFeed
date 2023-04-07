@@ -1,6 +1,6 @@
 import Foundation
 
-enum requestType {
+enum RequestType {
     case authToken(code: String)
     case profile
     case profileImage(username: String)
@@ -30,7 +30,7 @@ extension URLRequest {
         return request
     }
     
-    static func makeRequest(_ type: requestType) -> URLRequest {
+    static func makeRequest(_ type: RequestType) -> URLRequest {
         var request: URLRequest
         
         switch type {
