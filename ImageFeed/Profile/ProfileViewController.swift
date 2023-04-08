@@ -97,27 +97,22 @@ final class ProfileViewController: UIViewController {
     
     @objc
     private func didTapExitButton() {
-        showAlertViewController()
+        showLogoutMessage()
     }
 }
 
-extension ProfileViewController: AlertViewControllerDelegate {
-    func didTapFirstButton() {
-        profileLogout()
-    }
-    
-    private func showAlertViewController() {
-        let alertViewController = AlertViewController()
-        alertViewController.delegate = self
-        alertViewController.modalPresentationStyle = .overFullScreen
-        present(alertViewController, animated: false) {
-            alertViewController.showError(
-                title: "Пока, пока!",
-                message: "Уверены что хотите выйти?",
-                firstButtonText: "Да",
-                secondButtonText: "Нет"
-            )
-        }
+extension ProfileViewController {
+    private func showLogoutMessage() {
+        AlertPresenter.showAlert(
+            vc: self,
+            title: "Пока, пока!",
+            message: "Уверены что хотите выйти?",
+            firstButtonText: "Да", { [weak self] in
+                guard let self = self else { return }
+                self.profileLogout()
+            },
+            secondButtonText: "Нет"
+        )
     }
     
     private func profileLogout() {

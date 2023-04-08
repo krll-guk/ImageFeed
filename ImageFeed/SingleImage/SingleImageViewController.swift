@@ -47,7 +47,7 @@ final class SingleImageViewController: UIViewController {
             case .success(let value):
                 self.rescaleAndCenterImageInScrollView(image: value.image)
             case .failure(let error):
-                self.showAlertViewController()
+                self.showLoadError()
                 print(error)
             }
         }
@@ -84,26 +84,20 @@ extension SingleImageViewController: UIScrollViewDelegate {
     }
 }
 
-extension SingleImageViewController: AlertViewControllerDelegate {
-    func didTapFirstButton() {
-        didTapBackButton()
-    }
-    
-    func didTapSecondButton() {
-        downloadPhoto()
-    }
-    
-    private func showAlertViewController() {
-        let alertViewController = AlertViewController()
-        alertViewController.delegate = self
-        alertViewController.modalPresentationStyle = .overFullScreen
-        present(alertViewController, animated: false) {
-            alertViewController.showError(
-                title: "Что-то пошло не так(",
-                message: "Попробовать ещё раз?",
-                firstButtonText: "Не надо",
-                secondButtonText: "Повторить"
-            )
-        }
+extension SingleImageViewController {
+    private func showLoadError() {
+        AlertPresenter.showAlert(
+            vc: self,
+            title: "Что-то пошло не так(",
+            message: "Попробовать ещё раз?",
+            firstButtonText: "Не надо", { [weak self] in
+                guard let self = self else { return }
+                self.didTapBackButton()
+            },
+            secondButtonText: "Повторить", { [weak self] in
+                guard let self = self else { return }
+                self.downloadPhoto()
+            }
+        )
     }
 }

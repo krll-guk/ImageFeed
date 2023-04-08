@@ -34,8 +34,6 @@ final class ImagesListViewController: UIViewController {
             guard let self = self else { return }
             self.updateTableViewAnimated()
         }
-        
-        imagesListService.fetchPhotosNextPage()
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -60,12 +58,13 @@ extension ImagesListViewController {
             placeholder: UIImage(named: "photo_placeholder")
         ) { [weak self] result in
             guard let self = self else { return }
+            UIBlockingProgressHUD.dismiss()
             switch result {
             case .success:
                 self.tableView.reloadRows(at: [indexPath], with: .automatic)
             case .failure(let error):
                 self.error = error
-                self.showAlertViewController()
+                self.showLoadError()
                 print(error)
             }
         }
@@ -145,31 +144,32 @@ extension ImagesListViewController: ImagesListCellDelegate {
                 self.photos = self.imagesListService.photos
                 cell.setIsLiked(isLiked)
             case .failure:
-                self.showAlertViewController()
+                self.showLikeError()
             }
         }
     }
 }
 
-extension ImagesListViewController: AlertViewControllerDelegate {
-    func didTapFirstButton() {
-        if error != nil{
-            tableView.reloadData()
-        }
-        error = nil
+extension ImagesListViewController {
+    private func showLoadError() {
+        AlertPresenter.showAlert(
+            vc: self,
+            title: "Что-то пошло не так(",
+            message: "Не удалось загрузить фото",
+            firstButtonText: "Ок", { [weak self] in
+                guard let self = self else { return }
+                UIBlockingProgressHUD.show()
+                self.tableView.reloadData()
+            }
+        )
     }
     
-    private func showAlertViewController() {
-        let alertViewController = AlertViewController()
-        alertViewController.delegate = self
-        alertViewController.modalPresentationStyle = .overFullScreen
-        present(alertViewController, animated: false) { [weak self] in
-            guard let self = self else { return }
-            alertViewController.showError(
-                title: "Что-то пошло не так(",
-                message: self.error != nil ? "Не удалось загрузить фото" : "Не удалось поставить лайк",
-                firstButtonText: "Ок"
-            )
-        }
+    private func showLikeError() {
+        AlertPresenter.showAlert(
+            vc: self,
+            title: "Что-то пошло не так(",
+            message: "Не удалось поставить лайк",
+            firstButtonText: "Ок"
+        )
     }
 }

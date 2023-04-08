@@ -4,6 +4,7 @@ final class SplashViewController: UIViewController {
     private let profileService = ProfileService.shared
     private let oauth2Service = OAuth2Service.shared
     private let profileImageService = ProfileImageService.shared
+    private let imagesListService = ImagesListService.shared
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -69,7 +70,7 @@ extension SplashViewController: AuthViewControllerDelegate {
                 self.fetchProfile()
             case .failure:
                 UIBlockingProgressHUD.dismiss()
-                self.showAlertViewController()
+                self.showTokenError()
             }
         }
     }
@@ -80,33 +81,36 @@ extension SplashViewController: AuthViewControllerDelegate {
             UIBlockingProgressHUD.dismiss()
             switch result {
             case .success(let profile):
+                self.imagesListService.fetchPhotosNextPage()
                 self.profileImageService.fetchProfileImageURL(username: profile.username) { _ in }
                 self.switchToTabBarController()
             case .failure:
-                self.showAlertViewController()
+                self.showProfileError()
             }
         }
     }
 }
 
-extension SplashViewController: AlertViewControllerDelegate {
-    func didTapFirstButton() {
-        if OAuth2TokenStorage.token != nil {
-            UIBlockingProgressHUD.show()
-            fetchProfile()
-        }
+extension SplashViewController {
+    private func showProfileError() {
+        AlertPresenter.showAlert(
+            vc: self,
+            title: "Что-то пошло не так(",
+            message: "Не удалось загрузить данные",
+            firstButtonText: "Ок", { [weak self] in
+                guard let self = self else { return }
+                UIBlockingProgressHUD.show()
+                self.fetchProfile()
+            }
+        )
     }
     
-    private func showAlertViewController() {
-        let alertViewController = AlertViewController()
-        alertViewController.delegate = self
-        alertViewController.modalPresentationStyle = .overFullScreen
-        present(alertViewController, animated: false) {
-            alertViewController.showError(
-                title: "Что-то пошло не так(",
-                message: "Не удалось войти в систему",
-                firstButtonText: "Ок"
-            )
-        }
+    private func showTokenError() {
+        AlertPresenter.showAlert(
+            vc: presentedViewController ?? self,
+            title: "Что-то пошло не так(",
+            message: "Не удалось войти в систему",
+            firstButtonText: "Ок"
+        )
     }
 }
