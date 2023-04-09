@@ -34,6 +34,8 @@ final class ImagesListViewController: UIViewController {
             guard let self = self else { return }
             self.updateTableViewAnimated()
         }
+        
+        imagesListService.fetchPhotosNextPage()
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -69,7 +71,11 @@ extension ImagesListViewController {
             }
         }
         
-        cell.dateLabel.text = dateFormatter.string(from: photo.createdAt ?? Date())
+        if let date = photo.createdAt {
+            cell.dateLabel.text = dateFormatter.string(from: date)
+        } else {
+            cell.dateLabel.text = ""
+        }
         
         let likeImage = photo.isLiked ? UIImage(named: "likeButtonOn") : UIImage(named: "likeButtonOff")
         cell.likeButton.setImage(likeImage, for: .normal)

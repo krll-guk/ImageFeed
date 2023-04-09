@@ -12,7 +12,7 @@ struct Photo {
     init(fromResult: PhotoResult) {
         self.id = fromResult.id
         self.size = .init(width: fromResult.width, height: fromResult.height)
-        self.createdAt = ISO8601DateFormatter().date(from: fromResult.createdAt ?? "")
+        self.createdAt = ImagesListService.dateFormatter.date(from: fromResult.createdAt ?? "")
         self.welcomeDescription = fromResult.description
         self.thumbImageURL = fromResult.urls.thumb
         self.largeImageURL = fromResult.urls.full
@@ -63,10 +63,11 @@ final class ImagesListService {
     
     private let urlSession = URLSession.shared
     private var task: URLSessionTask?
+    static let dateFormatter = ISO8601DateFormatter()
     
     func fetchPhotosNextPage() {
         assert(Thread.isMainThread)
-        task?.cancel()
+        guard task == nil else { return }
         
         let nextPage = lastLoadedPage == nil ? 1 : lastLoadedPage! + 1
         

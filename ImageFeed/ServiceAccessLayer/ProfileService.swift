@@ -7,9 +7,9 @@ struct Profile {
     let bio: String
     
     init(fromResult: ProfileResult) {
-        self.username = fromResult.username ?? "username"
-        self.name = "\(fromResult.firstName ?? "Ivan") \(fromResult.lastName ?? "Ivanov")"
-        self.loginName = "@\(fromResult.username ?? "username")"
+        self.username = fromResult.username ?? ""
+        self.name = "\(fromResult.firstName ?? "") \(fromResult.lastName ?? "")"
+        self.loginName = "@\(fromResult.username ?? "")"
         self.bio = fromResult.bio ?? ""
     }
 }

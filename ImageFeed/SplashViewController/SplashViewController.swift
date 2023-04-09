@@ -4,7 +4,6 @@ final class SplashViewController: UIViewController {
     private let profileService = ProfileService.shared
     private let oauth2Service = OAuth2Service.shared
     private let profileImageService = ProfileImageService.shared
-    private let imagesListService = ImagesListService.shared
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -81,7 +80,6 @@ extension SplashViewController: AuthViewControllerDelegate {
             UIBlockingProgressHUD.dismiss()
             switch result {
             case .success(let profile):
-                self.imagesListService.fetchPhotosNextPage()
                 self.profileImageService.fetchProfileImageURL(username: profile.username) { _ in }
                 self.switchToTabBarController()
             case .failure:
