@@ -5,19 +5,26 @@ struct Profile {
     let name: String
     let loginName: String
     let bio: String
+    
+    init(fromResult: ProfileResult) {
+        self.username = fromResult.username ?? ""
+        self.name = "\(fromResult.firstName ?? "") \(fromResult.lastName ?? "")"
+        self.loginName = "@\(fromResult.username ?? "")"
+        self.bio = fromResult.bio ?? ""
+    }
 }
 
-fileprivate struct ProfileResult: Codable {
+struct ProfileResult: Codable {
     let username: String?
     let firstName: String?
     let lastName: String?
     let bio: String?
     
     enum CodingKeys: String, CodingKey {
-        case username = "username"
+        case username
         case firstName = "first_name"
         case lastName = "last_name"
-        case bio = "bio"
+        case bio
     }
 }
 
@@ -39,15 +46,11 @@ final class ProfileService {
             guard let self = self else { return }
             switch result {
             case .success(let profileResult):
-                let profile = Profile(
-                    username: profileResult.username ?? "username",
-                    name: "\(profileResult.firstName ?? "Ivan") \(profileResult.lastName ?? "Ivanov")",
-                    loginName: "@\(profileResult.username ?? "username")",
-                    bio: profileResult.bio ?? ""
-                )
+                let profile = Profile(fromResult: profileResult)
                 self.profile = profile
                 completion(.success(profile))
             case .failure(let error):
+                print(error)
                 completion(.failure(error))
             }
             self.task = nil

@@ -14,6 +14,7 @@ final class SplashViewController: UIViewController {
         super.viewDidAppear(animated)
         
         if OAuth2TokenStorage.token != nil {
+            UIBlockingProgressHUD.show()
             fetchProfile()
         } else {
             showAuthViewController()
@@ -68,7 +69,7 @@ extension SplashViewController: AuthViewControllerDelegate {
                 self.fetchProfile()
             case .failure:
                 UIBlockingProgressHUD.dismiss()
-                self.showError()
+                self.showTokenError()
             }
         }
     }
@@ -82,24 +83,32 @@ extension SplashViewController: AuthViewControllerDelegate {
                 self.profileImageService.fetchProfileImageURL(username: profile.username) { _ in }
                 self.switchToTabBarController()
             case .failure:
-                self.showError()
+                self.showProfileError()
             }
         }
     }
+}
+
+extension SplashViewController {
+    private func showProfileError() {
+        AlertPresenter.showAlert(
+            vc: self,
+            title: "Что-то пошло не так(",
+            message: "Не удалось загрузить данные",
+            firstButtonText: "Ок", { [weak self] in
+                guard let self = self else { return }
+                UIBlockingProgressHUD.show()
+                self.fetchProfile()
+            }
+        )
+    }
     
-    private func showError() {
-        let alert = UIAlertController(
+    private func showTokenError() {
+        AlertPresenter.showAlert(
+            vc: presentedViewController ?? self,
             title: "Что-то пошло не так(",
             message: "Не удалось войти в систему",
-            preferredStyle: .alert
+            firstButtonText: "Ок"
         )
-        
-        let action = UIAlertAction(
-            title: "Ок",
-            style: .default
-        )
-        
-        alert.addAction(action)
-        presentedViewController?.present(alert, animated: true)
     }
 }

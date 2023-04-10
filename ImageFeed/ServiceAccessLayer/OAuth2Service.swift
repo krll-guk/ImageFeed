@@ -36,6 +36,7 @@ final class OAuth2Service {
                 OAuth2TokenStorage.token = body.accessToken
                 completion(.success(body.accessToken))
             case .failure(let error):
+                print(error)
                 completion(.failure(error))
             }
             self.task = nil

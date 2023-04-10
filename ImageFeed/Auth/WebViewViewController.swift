@@ -19,8 +19,10 @@ final class WebViewViewController: UIViewController {
         
         webView.navigationDelegate = self
         
-        var urlComponents = URLComponents(string: Constants.oauthURL)!
-        urlComponents.path = "/authorize"
+        var urlComponents = URLComponents()
+        urlComponents.scheme = "https"
+        urlComponents.host = "unsplash.com"
+        urlComponents.path = "/oauth/authorize"
         urlComponents.queryItems = [
             URLQueryItem(name: "client_id", value: Constants.accessKey),
             URLQueryItem(name: "redirect_uri", value: Constants.redirectURI),
@@ -49,6 +51,17 @@ final class WebViewViewController: UIViewController {
     private func updateProgress() {
         progressView.progress = Float(webView.estimatedProgress)
         progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
+    }
+}
+
+extension WebViewViewController {
+    static func clean() {
+       HTTPCookieStorage.shared.removeCookies(since: Date.distantPast)
+       WKWebsiteDataStore.default().fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
+          records.forEach { record in
+             WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record], completionHandler: {})
+          }
+       }
     }
 }
 

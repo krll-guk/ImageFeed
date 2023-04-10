@@ -1,9 +1,11 @@
 import Foundation
 
-enum requestType {
+enum RequestType {
     case authToken(code: String)
     case profile
     case profileImage(username: String)
+    case photos(nextPage: Int)
+    case like(id: String, isLiked: Bool)
 }
 
 enum HTTPMethod: String {
@@ -13,11 +15,13 @@ enum HTTPMethod: String {
 extension URLRequest {
     static func setupHTTPRequest(
         httpMethod: String = HTTPMethod.GET.rawValue,
-        baseURL: String = Constants.apiURL,
+        host: String = "api.unsplash.com",
         path: String,
         queryItems: [URLQueryItem] = []
     ) -> URLRequest {
-        var urlComponents = URLComponents(string: baseURL)!
+        var urlComponents = URLComponents()
+        urlComponents.scheme = "https"
+        urlComponents.host = host
         urlComponents.path = path
         urlComponents.queryItems = queryItems
         let url = urlComponents.url!
@@ -26,15 +30,15 @@ extension URLRequest {
         return request
     }
     
-    static func makeRequest(_ type: requestType) -> URLRequest {
+    static func makeRequest(_ type: RequestType) -> URLRequest {
         var request: URLRequest
         
         switch type {
         case .authToken(let code):
             request = URLRequest.setupHTTPRequest(
                 httpMethod: HTTPMethod.POST.rawValue,
-                baseURL: Constants.oauthURL,
-                path: "/token",
+                host: "unsplash.com",
+                path: "/oauth/token",
                 queryItems: [
                     .init(name: "client_id", value: Constants.accessKey),
                     .init(name: "client_secret", value: Constants.secretKey),
@@ -47,6 +51,16 @@ extension URLRequest {
             request = URLRequest.setupHTTPRequest(path: "/me")
         case .profileImage(let username):
             request = URLRequest.setupHTTPRequest(path: "/users/\(username)")
+        case .photos(let nextPage):
+            request = URLRequest.setupHTTPRequest(
+                path: "/photos",
+                queryItems: [.init(name: "page", value: "\(nextPage)")]
+            )
+        case .like(let id, let isLiked):
+            request = URLRequest.setupHTTPRequest(
+                httpMethod: isLiked ? HTTPMethod.DELETE.rawValue : HTTPMethod.POST.rawValue,
+                path: "/photos/\(id)/like"
+            )
         }
         
         if let token = OAuth2TokenStorage.token {

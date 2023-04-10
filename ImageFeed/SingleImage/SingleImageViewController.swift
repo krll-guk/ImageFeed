@@ -1,11 +1,12 @@
 import UIKit
+import Kingfisher
+import ProgressHUD
 
 final class SingleImageViewController: UIViewController {
-    var image: UIImage! {
+    var photoURL: String! {
         didSet {
             guard isViewLoaded else { return }
-            imageView.image = image
-            rescaleAndCenterImageInScrollView(image: image)
+            downloadPhoto()
         }
     }
     
@@ -14,24 +15,42 @@ final class SingleImageViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        imageView.image = image
         
         scrollView.minimumZoomScale = 0.1
         scrollView.maximumZoomScale = 1.25
         
-        rescaleAndCenterImageInScrollView(image: image)
+        downloadPhoto()
     }
     
     @IBAction private func didTapBackButton() {
         dismiss(animated: true, completion: nil)
+        ProgressHUD.dismiss()
+        imageView.kf.cancelDownloadTask()
     }
     
     @IBAction private func didTapShareButton(_ sender: UIButton) {
         let share = UIActivityViewController(
-            activityItems: [image as Any],
+            activityItems: [imageView.image as Any],
             applicationActivities: nil
         )
         present(share, animated: true, completion: nil)
+    }
+    
+    private func downloadPhoto() {
+        guard let url = URL(string: photoURL) else { return }
+        ProgressHUD.show()
+        
+        imageView.kf.setImage(with: url) { [weak self] result in
+            guard let self = self else { return }
+            ProgressHUD.dismiss()
+            switch result {
+            case .success(let value):
+                self.rescaleAndCenterImageInScrollView(image: value.image)
+            case .failure(let error):
+                self.showLoadError()
+                print(error)
+            }
+        }
     }
     
     private func rescaleAndCenterImageInScrollView(image: UIImage) {
@@ -55,5 +74,30 @@ final class SingleImageViewController: UIViewController {
 extension SingleImageViewController: UIScrollViewDelegate {
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         imageView
+    }
+    
+    func scrollViewDidZoom(_ scrollView: UIScrollView) {
+        view.layoutIfNeeded()
+        let offsetX = max((scrollView.bounds.size.width - scrollView.contentSize.width) / 2, 0)
+        let offsetY = max((scrollView.bounds.size.height - scrollView.contentSize.height) / 2, 0)
+        scrollView.contentInset = UIEdgeInsets(top: offsetY, left: offsetX, bottom: 0, right: 0)
+    }
+}
+
+extension SingleImageViewController {
+    private func showLoadError() {
+        AlertPresenter.showAlert(
+            vc: self,
+            title: "Что-то пошло не так(",
+            message: "Попробовать ещё раз?",
+            firstButtonText: "Не надо", { [weak self] in
+                guard let self = self else { return }
+                self.didTapBackButton()
+            },
+            secondButtonText: "Повторить", { [weak self] in
+                guard let self = self else { return }
+                self.downloadPhoto()
+            }
+        )
     }
 }
