@@ -95,7 +95,7 @@ extension SplashViewController {
             vc: self,
             title: "Что-то пошло не так(",
             message: "Не удалось загрузить данные",
-            firstButtonText: "Ок", { [weak self] in
+            firstButtonText: "ОК", { [weak self] in
                 guard let self = self else { return }
                 UIBlockingProgressHUD.show()
                 self.fetchProfile()
@@ -108,7 +108,7 @@ extension SplashViewController {
             vc: presentedViewController ?? self,
             title: "Что-то пошло не так(",
             message: "Не удалось войти в систему",
-            firstButtonText: "Ок"
+            firstButtonText: "ОК"
         )
     }
 }

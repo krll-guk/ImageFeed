@@ -34,6 +34,8 @@ final class AlertPresenter {
             alert.addAction(action2)
         }
         
+        alert.view.accessibilityIdentifier = "Alert"
+        
         vc.present(alert, animated: true)
     }
 }

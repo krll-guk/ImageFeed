@@ -9,6 +9,26 @@ struct Photo {
     let largeImageURL: String
     var isLiked: Bool
     
+    init(id: String, size: CGSize, createdAt: Date, welcomeDescription: String, thumbImageURL: String, largeImageURL: String, isLiked: Bool) {
+        self.id = id
+        self.size = size
+        self.createdAt = createdAt
+        self.welcomeDescription = welcomeDescription
+        self.thumbImageURL = thumbImageURL
+        self.largeImageURL = largeImageURL
+        self.isLiked = isLiked
+    }
+    
+    static var test: Photo {
+        return Photo(id: "test",
+                     size: .init(width: 10, height: 10),
+                     createdAt: Date(),
+                     welcomeDescription: "test",
+                     thumbImageURL: "test",
+                     largeImageURL: "test",
+                     isLiked: true)
+    }
+    
     init(fromResult: PhotoResult) {
         self.id = fromResult.id
         self.size = .init(width: fromResult.width, height: fromResult.height)
