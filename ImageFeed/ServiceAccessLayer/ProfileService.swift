@@ -6,11 +6,25 @@ struct Profile {
     let loginName: String
     let bio: String
     
+    init(username: String, name: String, loginName: String, bio: String) {
+        self.username = username
+        self.name = name
+        self.loginName = loginName
+        self.bio = bio
+    }
+    
     init(fromResult: ProfileResult) {
         self.username = fromResult.username ?? ""
         self.name = "\(fromResult.firstName ?? "") \(fromResult.lastName ?? "")"
         self.loginName = "@\(fromResult.username ?? "")"
         self.bio = fromResult.bio ?? ""
+    }
+    
+    static var test: Profile {
+        return Profile(username: "test_username",
+                       name: "test_name",
+                       loginName: "test_loginName",
+                       bio: "test_bio")
     }
 }
 

@@ -1,11 +1,23 @@
 import UIKit
-import Kingfisher
 
-final class ProfileViewController: UIViewController {
-    private let profileService = ProfileService.shared
-    private var profileImageServiceObserver: NSObjectProtocol?
+protocol ProfileViewControllerProtocol: AnyObject {
+    var presenter: ProfilePresenterProtocol? { get set }
+    var profileImageView: UIImageView { get set }
+    var nameLabel: UILabel { get set }
+    var loginNameLabel: UILabel { get set }
+    var descriptionLabel: UILabel { get set }
+    var placeholder: UIImage { get set }
+    var window: UIWindow { get set }
+}
+
+final class ProfileViewController: UIViewController, ProfileViewControllerProtocol {
+    var presenter: ProfilePresenterProtocol?
     
-    private lazy var profileImageView: UIImageView = {
+    var window: UIWindow = UIApplication.shared.windows.first!
+    
+    var placeholder: UIImage = UIImage(named: "Stub")!
+    
+    lazy var profileImageView: UIImageView = {
         let image = UIImageView()
         image.image = UIImage(named: "Photo")
         image.layer.cornerRadius = 35
@@ -13,7 +25,7 @@ final class ProfileViewController: UIViewController {
         return image
     }()
     
-    private lazy var nameLabel: UILabel = {
+    lazy var nameLabel: UILabel = {
         let label = UILabel()
         label.text = "Екатерина Новикова"
         label.textColor = .white
@@ -21,7 +33,7 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
-    private lazy var loginNameLabel: UILabel = {
+    lazy var loginNameLabel: UILabel = {
         let label = UILabel()
         label.text = "@ekaterina_nov"
         label.textColor = UIColor(named: "YP Gray")
@@ -29,7 +41,7 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
-    private lazy var descriptionLabel: UILabel = {
+    lazy var descriptionLabel: UILabel = {
         let label = UILabel()
         label.text = "Hello, world!"
         label.textColor = .white
@@ -43,6 +55,7 @@ final class ProfileViewController: UIViewController {
             target: self,
             action: #selector(Self.didTapExitButton)
         )
+        button.accessibilityIdentifier = "exitButton"
         button.tintColor = UIColor(named: "YP Red")
         return button
     }()
@@ -50,40 +63,7 @@ final class ProfileViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        
-        if let profile = profileService.profile {
-            updateProfileDetails(profile: profile)
-        }
-        
-        profileImageServiceObserver = NotificationCenter.default.addObserver(
-            forName: ProfileImageService.didChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self = self else { return }
-            self.updateAvatar()
-        }
-        updateAvatar()
-    }
-    
-    private func updateAvatar() {
-        guard
-            let profileImageURL = ProfileImageService.shared.avatarURL,
-            let url = URL(string: profileImageURL)
-        else { return }
-        
-        let cache = ImageCache.default
-        cache.clearMemoryCache()
-        cache.clearDiskCache()
-        
-        profileImageView.kf.indicatorType = .activity
-        profileImageView.kf.setImage(with: url, placeholder: UIImage(named: "Stub"))
-    }
-    
-    private func updateProfileDetails(profile: Profile) {
-        nameLabel.text = profile.name
-        loginNameLabel.text = profile.loginName
-        descriptionLabel.text = profile.bio
+        presenter?.viewDidLoad()
     }
     
     private func setupUI() {
@@ -95,13 +75,10 @@ final class ProfileViewController: UIViewController {
         setupExitButton()
     }
     
-    @objc
-    private func didTapExitButton() {
+    @objc private func didTapExitButton() {
         showLogoutMessage()
     }
-}
-
-extension ProfileViewController {
+    
     private func showLogoutMessage() {
         AlertPresenter.showAlert(
             vc: self,
@@ -109,20 +86,10 @@ extension ProfileViewController {
             message: "Уверены что хотите выйти?",
             firstButtonText: "Да", { [weak self] in
                 guard let self = self else { return }
-                self.profileLogout()
+                self.presenter?.profileLogout()
             },
             secondButtonText: "Нет"
         )
-    }
-    
-    private func profileLogout() {
-        OAuth2TokenStorage.token = nil
-        WebViewViewController.clean()
-        
-        guard let window = UIApplication.shared.windows.first else {
-            return assertionFailure("Invalid Configuration")
-        }
-        window.rootViewController = SplashViewController()
     }
 }
 
